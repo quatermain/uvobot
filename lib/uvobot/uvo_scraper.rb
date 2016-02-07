@@ -27,12 +27,18 @@ module Uvobot
       search_query = { kcpv: IT_CONTRACTS_CODE, dzOd: date, dzDo: date }
       html = @html_client.post(SEARCH_URL, search_query).body
 
-      [@parser.parse_page_info(html), @parser.parse_announcements(html, BULLETIN_URL)]
+      [@parser.parse_page_info(html), @parser.parse_announcements(html, BULLETIN_URL, release_date)]
     end
 
-    def get_announcement_detail(url)
+    def get_announcement_detail(url, release_date)
       html = @html_client.get(url).body
-      @parser.parse_detail(html)
+      response = @parser.parse_detail(html)
+      order_id, order_url = @parser.parse_order_documents_url(html)
+      response[:order] = {
+          id: order_id,
+          documents: @parser.parse_order_documents(@html_client.get(order_url).body, BULLETIN_URL, release_date)
+      }
+      response
     end
   end
 end

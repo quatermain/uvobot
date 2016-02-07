@@ -4,9 +4,10 @@ require_relative 'lib/uvobot'
 
 Dotenv.load
 discourse_client = Uvobot::DiscourseClient.new(
-  ENV.fetch('DISCOURSE_URL'),
-  ENV.fetch('DISCOURSE_API_KEY'),
-  ENV.fetch('DISCOURSE_USER')
+  host: ENV.fetch('DISCOURSE_URL'),
+  api_key: ENV.fetch('DISCOURSE_API_KEY'),
+  api_username: ENV.fetch('DISCOURSE_USER'),
+  local_store: Uvobot::Store::Manager.new(ENV.fetch('DATABASE_URL'))
 )
 
 notifiers = [

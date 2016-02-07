@@ -20,33 +20,42 @@ module Uvobot
       def matching_announcements_found(_page_info, announcements)
         announcements.each do |a|
           topic = announcement_to_topic(a)
-          @client.create_topic(
-            title: topic[:title],
-            raw: topic[:body],
-            category: @category
-          )
+          @client.store_topic(order_id: a[:order][:id], topic: topic, category: @category)
         end
       end
 
       private
 
       def announcement_to_topic(announcement)
-        detail = @scraper.get_announcement_detail(announcement[:link][:href])
-
-        {
-          title: announcement[:procurement_subject].to_s,
-          body: ["**Obstarávateľ:** #{announcement[:procurer]}",
-                 "**Predmet obstarávania:** #{announcement[:procurement_subject]}",
-                 detail_message(detail),
-                 "**Zdroj:** [#{announcement[:link][:text]}](#{announcement[:link][:href]})"].join("  \n")
-        }
+        details = @scraper.get_announcement_detail(announcement[:link][:href], announcement[:release_date])
+        response = {}
+        response[:title] = announcement[:procurement_subject].to_s
+        response[:body] = [
+            "**Obstarávateľ:** #{announcement[:procurer]}",
+            "**Predmet obstarávania:** #{announcement[:procurement_subject]}",
+            price_details(details),
+            order_documents(details),
+            "**Zdroj:** [#{announcement[:link][:text]}](#{announcement[:link][:href]})"
+        ].join("  \n")
       end
 
-      def detail_message(detail)
-        if detail
-          "**Cena:** #{detail[:amount]}"
+      def price_details(details)
+        if details && details[:amount]
+          "**Cena:** #{details[:amount]}"
         else
-          '**Detaily sa nepodarilo extrahovať.**'
+          '**Cena:** nepodarilo sa extrahovať'
+        end
+      end
+
+      def order_documents(details)
+        if details && details[:order] && details[:order][:documents]
+          response = [ "** Dokumenty zákazky:**" ]
+          details[:order][:documents].each do |document|
+            response << "#{document[:name]} [#{document[:href]}]"
+          end
+          response.join("  \n")
+        else
+          '** Dokumenty zákazky:** nepodarilo sa extrahovať.**'
         end
       end
     end
